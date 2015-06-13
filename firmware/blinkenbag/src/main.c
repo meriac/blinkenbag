@@ -25,7 +25,7 @@
 #include "words.h"
 #include "cie1931.h"
 
-#define DELAY 30
+#define DELAY 15
 #define CIE_MAX_INDEX2 (CIE_MAX_INDEX/2)
 #define SPI_CS_RGB SPI_CS(LED_PORT,LED_PIN1,6, SPI_CS_MODE_NORMAL )
 
@@ -225,7 +225,7 @@ main (void)
 			" end of the western spiral arm of the Galaxy lies a smal"
 			"l unregarded yellow sun. Orbiting this at a distance of "
 			"roughly ninety-two million miles is an utterly insignifi"
-			"cant little blue green planet whose ape-descended life f"
+			"cant little blue-green planet whose ape-descended life f"
 			"orms are so amazingly primitive that they still think di"
 			"gital watches are a pretty neat idea.");
 
