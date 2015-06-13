@@ -63,7 +63,7 @@ static const TWordPos g_words[] = {
 	{ 0,0,12}, // 27 governments.
 };
 
-static const int g_sentence[] = {
+static const int g_sentence1[] = {
 	// Remember, Remember, the Fifth of November,
 	18, -1, 18, -1, 20, 4, 13, 12, -1,
 	// the Gunpowder Treason and Plot
@@ -74,16 +74,15 @@ static const int g_sentence[] = {
 	19, 3, -1, 2, -1, 5, -1, -1,
 
 	// guy fawkes, 1605
-	24, 25, -1, 26, -1, -1,
+	24, 25, -1, 26, -1, -1
+};
 
+static const int g_sentence2[] = {
 	// People should not be afraid of their governments
 	14, 19, 11, 2, 0, 13, 21, 27, -1,
 	6, 19, 2, 0, 13, 21, 14, -1, -1,
-
-	// long pause
-	-1, -1,
 };
 
-#define WORD_COUNT ((int)(sizeof(g_sentence)/sizeof(g_sentence[0])))
+#define WORD_COUNT(x) ((int)(sizeof(x)/sizeof(x[0])))
 
 #endif/*__WORDS_H__*/

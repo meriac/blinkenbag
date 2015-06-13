@@ -25,12 +25,11 @@
 #include "words.h"
 #include "cie1931.h"
 
-#define DELAY 200
+#define DELAY 30
 #define CIE_MAX_INDEX2 (CIE_MAX_INDEX/2)
 #define SPI_CS_RGB SPI_CS(LED_PORT,LED_PIN1,6, SPI_CS_MODE_NORMAL )
 
-#define FONT_SPACE (FONT_WIDTH+1)
-#define FONT_OVERSAMPLING 100
+#define FONT_SPACE (FONT_WIDTH+2)
 #define CHARS_PER_DISPLAY (int)((LED_X+FONT_SPACE-1)/FONT_SPACE)
 
 typedef struct {
@@ -70,19 +69,19 @@ static void set_pixel_plasma(int x, int y, uint8_t alpha)
 {
 	TRGB color, *p;
 
-	if( (x<0) || (x>=LED_X) || (y<0) || (y>LED_Y) )
+	if( (x<0) || (x>=LED_X) || (y<0) || (y>=LED_Y) )
 		return;
 
 	/* update color */
-	color.r = (sin( x*0.1+cos(y*0.1+g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
-	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
-	color.b = (cos( x*0.5-cos(y*0.4+g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
+	color.r = (sin( x*0.1+cos(y*0.1+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+	color.b = (cos( x*0.5-cos(y*0.4+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
 
 	/* update pixel */
 	p = &g_data[y][x];
-	p->r = g_cie[color.r];
-	p->g = g_cie[color.g];
-	p->b = g_cie[color.b];
+	p->r = g_cie[(color.r*(int)alpha)/255];
+	p->g = g_cie[(color.g*(int)alpha)/255];
+	p->b = g_cie[(color.b*(int)alpha)/255];
 }
 
 static void display_plasma(void)
@@ -98,7 +97,7 @@ static void display_plasma(void)
 	update_leds();
 }
 
-void display_words(void)
+void display_words(const int* words, int word_count)
 {
 	int i, word;
 	const TWordPos *w;
@@ -112,9 +111,9 @@ void display_words(void)
 		memset(g_alpha_channel, 0, sizeof(g_alpha_channel));
 
 		/* get next word */
-		i = g_sentence[word/DELAY];
+		i = words[word/DELAY];
 		word++;
-		if(word>=(WORD_COUNT*DELAY))
+		if(word>=(word_count*DELAY))
 			break;
 
 		if(i>=0)
@@ -127,9 +126,7 @@ void display_words(void)
 
 		/* display data */
 		display_plasma();
-		/* wait */
-		pmu_wait_ms(1);
-		g_time+=0.01;
+		g_time+=0.07;
 	}
 }
 
@@ -160,7 +157,7 @@ static void display_scrolling_draw(char ch, int xpos)
 				{
 					px = xpos+x;
 					if((data & 1) && (px>=0) && (px<LED_X))
-						g_alpha_channel[y][xpos+x] = 0xFF;
+						g_alpha_channel[y][px] = 0xFF;
 					data >>= 1;
 				}
 			}
@@ -172,26 +169,25 @@ static void display_scrolling_draw(char ch, int xpos)
 static void display_scrolling(const char* msg)
 {
 	char c;
-	int t, i, j, pos, x, len, skip;
+	int i, j, pos, x, len, skip;
 
 	len = strlen(msg);
 
-	for(t=0; t<((len*FONT_WIDTH+LED_X)*FONT_OVERSAMPLING); t++)
+	for(x=-LED_X; x<(len*FONT_SPACE); x++)
 	{
 		/* set background to black */
 		memset(g_alpha_channel, 0, sizeof(g_alpha_channel));
 
 		/* get position in text */
-		x = t / FONT_OVERSAMPLING;
-		i = x / FONT_WIDTH;
-		skip = x % FONT_WIDTH;
+		i = x / FONT_SPACE;
+		skip = x % FONT_SPACE;
 
 		/* display one frame */
 		for(j=0; j<=CHARS_PER_DISPLAY; j++)
 		{
 			/* get character from msg */
 			pos = i+j;
-			c = (pos<len) ? msg[pos] : ' ';
+			c = ((pos>=0) && (pos<len)) ? msg[pos] : ' ';
 
 			display_scrolling_draw(c,(j*FONT_SPACE)-skip);
 		}
@@ -199,8 +195,8 @@ static void display_scrolling(const char* msg)
 		/* send data */
 		display_plasma();
 		/* wait */
-		pmu_wait_ms(1);
-		g_time+=0.01;
+		pmu_wait_ms(10);
+		g_time+=0.1;
 	}
 }
 
@@ -224,7 +220,21 @@ main (void)
 	g_time = 0;
 	while(1)
 	{
-		display_scrolling("Hello World!");
-		display_words();
+		display_scrolling(
+			"Far out in the uncharted backwaters of the unfashionable"
+			" end of the western spiral arm of the Galaxy lies a smal"
+			"l unregarded yellow sun. Orbiting this at a distance of "
+			"roughly ninety-two million miles is an utterly insignifi"
+			"cant little blue green planet whose ape-descended life f"
+			"orms are so amazingly primitive that they still think di"
+			"gital watches are a pretty neat idea.");
+
+		display_words(g_sentence1, WORD_COUNT(g_sentence1));
+
+		display_scrolling(
+			"I thought what I'd do was, I'd pretend I was one of thos"
+			"e deaf-mutes.");
+
+		display_words(g_sentence2, WORD_COUNT(g_sentence2));
 	}
 }
