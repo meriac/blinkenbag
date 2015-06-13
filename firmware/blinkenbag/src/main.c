@@ -204,7 +204,8 @@ static void display_scrolling(const char* msg)
 int
 main (void)
 {
-	uint16_t prng, rnd;
+	uint32_t prng;
+	uint16_t rnd;
 
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
