@@ -67,14 +67,14 @@ echo '#define FONT_INDEX '.(FONT_WIDTH+1).PHP_EOL;
 echo '#define FONT_COUNT '.$map_len.PHP_EOL;
 
 /* dump all font characters */
-echo PHP_EOL.'const uint8_t g_font[FONT_COUNT*FONT_INDEX] = ('.PHP_EOL;
+echo PHP_EOL.'const uint8_t g_font[FONT_COUNT*FONT_INDEX] = {'.PHP_EOL;
 for($i=0; $i<$count; $i++)
 {
-	printf("\t%s'%s'", $i?',':' ', FONT_MAP[$i]);
+	printf("\t%s'%s'", $i?',':' ', addcslashes(FONT_MAP[$i],'\\'));
 	foreach(read_character($png, $i*FONT_WIDTH) as $line)
 		printf(",0x%02X", $line);
 	echo PHP_EOL;
 }
-echo ");".PHP_EOL;
+echo "};".PHP_EOL;
 
 echo PHP_EOL.'#endif/*__FONT_H__*/'.PHP_EOL;
