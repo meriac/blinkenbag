@@ -22,6 +22,7 @@
  */
 #include <openbeacon.h>
 #include <font.h>
+#include "quotes.h"
 #include "words.h"
 #include "cie1931.h"
 
@@ -203,6 +204,8 @@ static void display_scrolling(const char* msg)
 int
 main (void)
 {
+	uint16_t prng, rnd;
+
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
 
@@ -218,23 +221,27 @@ main (void)
 	spi_init_pin (SPI_CS_RGB);
 
 	g_time = 0;
+	prng = 0;
 	while(1)
 	{
-		display_scrolling(
-			"Far out in the uncharted backwaters of the unfashionable"
-			" end of the western spiral arm of the Galaxy lies a smal"
-			"l unregarded yellow sun. Orbiting this at a distance of "
-			"roughly ninety-two million miles is an utterly insignifi"
-			"cant little blue-green planet whose ape-descended life f"
-			"orms are so amazingly primitive that they still think di"
-			"gital watches are a pretty neat idea.");
+		/* random quote */
+		rnd = icrc16((uint8_t*)&prng, sizeof(prng));
+		prng++;
 
-		display_words(g_sentence1, WORD_COUNT(g_sentence1));
+		/* randomly switch between different animations */
+		switch(rnd % 10)
+		{
+			case 0:
+				display_words(g_sentence1, WORD_COUNT(g_sentence1));
+				break;
 
-		display_scrolling(
-			"I thought what I'd do was, I'd pretend I was one of thos"
-			"e deaf-mutes.");
+			case 1:
+			case 2:
+				display_words(g_sentence2, WORD_COUNT(g_sentence2));
+				break;
 
-		display_words(g_sentence2, WORD_COUNT(g_sentence2));
+			default:
+				display_scrolling(g_quotes[rnd % QUOTE_COUNT]);
+		}
 	}
 }
