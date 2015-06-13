@@ -4,7 +4,7 @@ CPU=$(ARCH)43
 DEBUG=-g
 OPTIM=-Os -mword-relocations
 
-APP_CFLAGS=-Iinc -std=gnu99 -fgnu89-inline -D__USE_CMSIS
+APP_CFLAGS=-Iinc -I../font/inc -std=gnu99 -fgnu89-inline -D__USE_CMSIS
 APP_LDFLAGS=-lm
 
 APP_SRC= \

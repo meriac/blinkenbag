@@ -21,6 +21,7 @@
 
  */
 #include <openbeacon.h>
+#include <font.h>
 #include "words.h"
 #include "cie1931.h"
 
