@@ -36,7 +36,7 @@ typedef struct {
 static const uint8_t g_latch = 0;
 static TRGB g_data[LED_Y][LED_X];
 
-void update_leds(void)
+static void update_leds(void)
 {
 	int x,y;
 	TRGB data[LED_COUNT], *dst;
@@ -60,47 +60,27 @@ void update_leds(void)
 	spi_txrx (SPI_CS_RGB, &data, sizeof(data), NULL, 0);
 }
 
-int
-main (void)
+static void display_words(void)
 {
 	double t;
 	int i, word, x, y;
 	const TWordPos *w;
 	TRGB color, *p;
 
-	/* Initialize GPIO (sets up clock) */
-	GPIOInit ();
-
-	/* Set LED port pin to output */
-	GPIOSetDir (LED_PORT, LED_PIN0, 1);
-	GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
-
-	/* Init Power Management Routines */
-	pmu_init ();
-
-	/* setup SPI chipselect pin */
-	spi_init ();
-	spi_init_pin (SPI_CS_RGB);
-
 	/* transmit image */
 	t = 0;
 	word = 0;
+
 	while(1)
 	{
-		/* set background to red */
+		/* set background to black */
 		memset(g_data, g_cie[0x00], sizeof(g_data));
-		for(y=0; y<LED_Y; y++)
-			for(x=0; x<LED_X; x++)
-			{
-				g_data[y][x].r = g_cie[0x16];
-				g_data[y][x].g = g_cie[0x0B];
-			}
 
 		/* get next word */
 		i = g_sentence[word/DELAY];
 		word++;
 		if(word>=(WORD_COUNT*DELAY))
-			word=0;
+			break;
 
 		if(i>=0)
 		{
@@ -128,5 +108,28 @@ main (void)
 		pmu_wait_ms(1);
 
 		t+=0.01;
+	}
+}
+
+int
+main (void)
+{
+	/* Initialize GPIO (sets up clock) */
+	GPIOInit ();
+
+	/* Set LED port pin to output */
+	GPIOSetDir (LED_PORT, LED_PIN0, 1);
+	GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
+
+	/* Init Power Management Routines */
+	pmu_init ();
+
+	/* setup SPI chipselect pin */
+	spi_init ();
+	spi_init_pin (SPI_CS_RGB);
+
+	while(1)
+	{
+		display_words();
 	}
 }
