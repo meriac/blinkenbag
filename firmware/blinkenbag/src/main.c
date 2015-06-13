@@ -30,6 +30,7 @@
 #define SPI_CS_RGB SPI_CS(LED_PORT,LED_PIN1,6, SPI_CS_MODE_NORMAL )
 
 #define FONT_SPACE (FONT_WIDTH+1)
+#define FONT_OVERSAMPLING 100
 #define CHARS_PER_DISPLAY (int)((LED_X+FONT_SPACE-1)/FONT_SPACE)
 
 typedef struct {
@@ -39,6 +40,7 @@ typedef struct {
 static double g_time;
 static const uint8_t g_latch = 0;
 static TRGB g_data[LED_Y][LED_X];
+static uint8_t g_alpha_channel[LED_Y][LED_X];
 
 static void update_leds(void)
 {
@@ -64,7 +66,7 @@ static void update_leds(void)
 	spi_txrx (SPI_CS_RGB, &data, sizeof(data), NULL, 0);
 }
 
-static void set_pixel_plasma(int x, int y)
+static void set_pixel_plasma(int x, int y, uint8_t alpha)
 {
 	TRGB color, *p;
 
@@ -72,9 +74,9 @@ static void set_pixel_plasma(int x, int y)
 		return;
 
 	/* update color */
-	color.r = (sin( x*0.1+cos(y*0.1+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
-	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
-	color.b = (cos( x*0.5-cos(y*0.4+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+	color.r = (sin( x*0.1+cos(y*0.1+g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
+	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
+	color.b = (cos( x*0.5-cos(y*0.4+g_time))*alpha*CIE_MAX_INDEX2)/255+CIE_MAX_INDEX2;
 
 	/* update pixel */
 	p = &g_data[y][x];
@@ -83,7 +85,25 @@ static void set_pixel_plasma(int x, int y)
 	p->b = g_cie[color.b];
 }
 
-static void display_words(void)
+static void display_plasma(void)
+{
+	int x, y;
+	uint8_t alpha;
+
+	/* set background to black */
+	memset(g_data, g_cie[0x00], sizeof(g_data));
+
+	/* apply plasma to alpha channel */
+	for(y=0; y<LED_Y; y++)
+		for(x=0; x<LED_X; x++)
+			if((alpha = g_alpha_channel[y][x])!=0)
+				set_pixel_plasma(x,y,alpha);
+
+	/* send data */
+	update_leds();
+}
+
+void display_words(void)
 {
 	int i, word;
 	const TWordPos *w;
@@ -94,7 +114,7 @@ static void display_words(void)
 	while(1)
 	{
 		/* set background to black */
-		memset(g_data, g_cie[0x00], sizeof(g_data));
+		memset(g_alpha_channel, 0, sizeof(g_alpha_channel));
 
 		/* get next word */
 		i = g_sentence[word/DELAY];
@@ -107,11 +127,11 @@ static void display_words(void)
 			w = &g_words[i];
 
 			for(i=0; i<w->length; i++)
-				set_pixel_plasma(w->x + i, w->y);
+				g_alpha_channel[w->y][w->x + i] = 0xFF;
 		}
 
-		/* send data */
-		update_leds();
+		/* display data */
+		display_plasma();
 		/* wait */
 		pmu_wait_ms(1);
 		g_time+=0.01;
@@ -120,7 +140,7 @@ static void display_words(void)
 
 static void display_scrolling_draw(char ch, int xpos)
 {
-	int i, x, y;
+	int i, px, x, y;
 	uint8_t data;
 	const uint8_t *p;
 
@@ -143,8 +163,9 @@ static void display_scrolling_draw(char ch, int xpos)
 				data = *p++;
 				for(x=0; x<FONT_WIDTH; x++)
 				{
-					if(data & 1)
-						set_pixel_plasma( xpos+x, y );
+					px = xpos+x;
+					if((data & 1) && (px>=0) && (px<LED_X))
+						g_alpha_channel[y][xpos+x] = 0xFF;
 					data >>= 1;
 				}
 			}
@@ -156,16 +177,17 @@ static void display_scrolling_draw(char ch, int xpos)
 static void display_scrolling(const char* msg)
 {
 	char c;
-	int i, j, pos, x, len, skip;
+	int t, i, j, pos, x, len, skip;
 
 	len = strlen(msg);
 
-	for(x=0; x<(len*FONT_WIDTH+LED_X); x++)
+	for(t=0; t<((len*FONT_WIDTH+LED_X)*FONT_OVERSAMPLING); t++)
 	{
 		/* set background to black */
-		memset(g_data, g_cie[0x00], sizeof(g_data));
+		memset(g_alpha_channel, 0, sizeof(g_alpha_channel));
 
 		/* get position in text */
+		x = t / FONT_OVERSAMPLING;
 		i = x / FONT_WIDTH;
 		skip = x % FONT_WIDTH;
 
@@ -180,9 +202,10 @@ static void display_scrolling(const char* msg)
 		}
 
 		/* send data */
-		update_leds();
-		pmu_wait_ms(100);
-		g_time+=0.1;
+		display_plasma();
+		/* wait */
+		pmu_wait_ms(1);
+		g_time+=0.01;
 	}
 }
 
@@ -206,7 +229,7 @@ main (void)
 	g_time = 0;
 	while(1)
 	{
-		display_scrolling("The quick brown fox jumps over the lazy dog!");
+		display_scrolling("Hello World!");
 		display_words();
 	}
 }
