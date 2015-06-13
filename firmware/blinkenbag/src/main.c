@@ -29,10 +29,14 @@
 #define CIE_MAX_INDEX2 (CIE_MAX_INDEX/2)
 #define SPI_CS_RGB SPI_CS(LED_PORT,LED_PIN1,6, SPI_CS_MODE_NORMAL )
 
+#define FONT_SPACE (FONT_WIDTH+1)
+#define CHARS_PER_DISPLAY (int)((LED_X+FONT_SPACE-1)/FONT_SPACE)
+
 typedef struct {
 	uint8_t b, r ,g;
 } TRGB;
 
+static double g_time;
 static const uint8_t g_latch = 0;
 static TRGB g_data[LED_Y][LED_X];
 
@@ -60,15 +64,31 @@ static void update_leds(void)
 	spi_txrx (SPI_CS_RGB, &data, sizeof(data), NULL, 0);
 }
 
-static void display_words(void)
+static void set_pixel_plasma(int x, int y)
 {
-	double t;
-	int i, word, x, y;
-	const TWordPos *w;
 	TRGB color, *p;
 
+	if( (x<0) || (x>=LED_X) || (y<0) || (y>LED_Y) )
+		return;
+
+	/* update color */
+	color.r = (sin( x*0.1+cos(y*0.1+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+	color.b = (cos( x*0.5-cos(y*0.4+g_time))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
+
+	/* update pixel */
+	p = &g_data[y][x];
+	p->r = g_cie[color.r];
+	p->g = g_cie[color.g];
+	p->b = g_cie[color.b];
+}
+
+static void display_words(void)
+{
+	int i, word;
+	const TWordPos *w;
+
 	/* transmit image */
-	t = 0;
 	word = 0;
 
 	while(1)
@@ -87,27 +107,82 @@ static void display_words(void)
 			w = &g_words[i];
 
 			for(i=0; i<w->length; i++)
-			{
-				/* word coordinates */
-				x = w->x + i;
-				y = w->y;
-
-				/* update color */
-				color.r = (sin( x*0.1+cos(y*0.1+t))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
-				color.g = (cos(-y*0.2-sin(x*0.3-t))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
-				color.b = (cos( x*0.5-cos(y*0.4+t))*CIE_MAX_INDEX2)+CIE_MAX_INDEX2;
-
-				p = &g_data[y][x];
-				p->r = g_cie[color.r];
-				p->g = g_cie[color.g];
-				p->b = g_cie[color.b];
-			}
+				set_pixel_plasma(w->x + i, w->y);
 		}
+
 		/* send data */
 		update_leds();
+		/* wait */
 		pmu_wait_ms(1);
+		g_time+=0.01;
+	}
+}
 
-		t+=0.01;
+static void display_scrolling_draw(char ch, int xpos)
+{
+	int i, x, y;
+	uint8_t data;
+	const uint8_t *p;
+
+	/* map to upper case */
+	if((ch>='a') && (ch<='z'))
+		ch -= 'a'-'A';
+
+	/* search for font entry */
+	for(i=0; i<FONT_COUNT; i++)
+	{
+		p = &g_font[i*FONT_INDEX];
+		/* find our character */
+		if(*p == (uint8_t)ch)
+		{
+			/* progress to first data line */
+			p++;
+
+			for(y=FONT_HEIGHT-1; y>=0;  y--)
+			{
+				data = *p++;
+				for(x=0; x<FONT_WIDTH; x++)
+				{
+					if(data & 1)
+						set_pixel_plasma( xpos+x, y );
+					data >>= 1;
+				}
+			}
+			return;
+		}
+	}
+}
+
+static void display_scrolling(const char* msg)
+{
+	char c;
+	int i, j, pos, x, len, skip;
+
+	len = strlen(msg);
+
+	for(x=0; x<(len*FONT_WIDTH+LED_X); x++)
+	{
+		/* set background to black */
+		memset(g_data, g_cie[0x00], sizeof(g_data));
+
+		/* get position in text */
+		i = x / FONT_WIDTH;
+		skip = x % FONT_WIDTH;
+
+		/* display one frame */
+		for(j=0; j<=CHARS_PER_DISPLAY; j++)
+		{
+			/* get character from msg */
+			pos = i+j;
+			c = (pos<len) ? msg[pos] : ' ';
+
+			display_scrolling_draw(c,(j*FONT_SPACE)-skip);
+		}
+
+		/* send data */
+		update_leds();
+		pmu_wait_ms(100);
+		g_time+=0.1;
 	}
 }
 
@@ -128,8 +203,10 @@ main (void)
 	spi_init ();
 	spi_init_pin (SPI_CS_RGB);
 
+	g_time = 0;
 	while(1)
 	{
+		display_scrolling("The quick brown fox jumps over the lazy dog!");
 		display_words();
 	}
 }
