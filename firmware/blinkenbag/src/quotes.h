@@ -87,14 +87,6 @@ const char* g_quotes[] = {
 	"orations that name everything, the IBM Stellar Sphere, "
 	"the Microsoft Galaxy, Planet Starbucks.",
 
-	/* Bokonon */
-
-	"As Bokonon says: \"Peculiar travel suggestions are danc"
-	"ing lessons from God.\"",
-
-	"If you wish to study a granfalloon, just remove the ski"
-	"n of a toy balloon.",
-
 	/* Sasha Yuvchenko - Nightshift at Chernobyl power plant
 	 * on April 25 1986 */
 
@@ -108,6 +100,14 @@ const char* g_quotes[] = {
 	"tars. A stream of ionising radiation was shooting starw"
 	"ards, like a laser beam. I remember thinking how beauti"
 	"ful it was.",
+
+	/* Bokonon */
+
+	"As Bokonon says: \"Peculiar travel suggestions are danc"
+	"ing lessons from God.\"",
+
+	"If you wish to study a granfalloon, just remove the ski"
+	"n of a toy balloon.",
 
 	/* A Space Odyssey 2001 */
 

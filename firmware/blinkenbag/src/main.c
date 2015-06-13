@@ -204,6 +204,7 @@ static void display_scrolling(const char* msg)
 int
 main (void)
 {
+	uint8_t flag;
 	uint32_t prng;
 	uint16_t rnd;
 
@@ -221,6 +222,7 @@ main (void)
 	spi_init ();
 	spi_init_pin (SPI_CS_RGB);
 
+	flag = 0;
 	g_time = 0;
 	prng = 0;
 	while(1)
@@ -234,15 +236,24 @@ main (void)
 		{
 			case 0:
 				display_words(g_sentence1, WORD_COUNT(g_sentence1));
+				flag = 0;
 				break;
 
 			case 1:
 			case 2:
 				display_words(g_sentence2, WORD_COUNT(g_sentence2));
+				flag = 0;
 				break;
 
 			default:
+				/* force wait between scrolling text pieces */
+				if(flag)
+					pmu_wait_ms(1500);
+
 				display_scrolling(g_quotes[rnd % QUOTE_COUNT]);
+
+				/* flag as text */
+				flag = 1;
 		}
 	}
 }
