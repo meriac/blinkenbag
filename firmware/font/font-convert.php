@@ -28,7 +28,7 @@
 define('FONT_FILE', 'font.png');
 define('FONT_WIDTH', 5);
 define('FONT_HEIGHT', 5);
-define('FONT_MAP', '0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]{}!"#()*+-/');
+define('FONT_MAP', '0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]{}!"#()*+-/.\'');
 
 function read_character($img, $posx)
 {
@@ -70,7 +70,7 @@ echo '#define FONT_COUNT '.$map_len.PHP_EOL;
 echo PHP_EOL.'const uint8_t g_font[FONT_COUNT*FONT_INDEX] = {'.PHP_EOL;
 for($i=0; $i<$count; $i++)
 {
-	printf("\t%s'%s'", $i?',':' ', addcslashes(FONT_MAP[$i],'\\'));
+	printf("\t%s'%s'", $i?',':' ', addcslashes(FONT_MAP[$i],'\\\''));
 	foreach(read_character($png, $i*FONT_WIDTH) as $line)
 		printf(",0x%02X", $line);
 	echo PHP_EOL;
