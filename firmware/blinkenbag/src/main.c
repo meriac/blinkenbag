@@ -88,16 +88,11 @@ static void set_pixel_plasma(int x, int y, uint8_t alpha)
 static void display_plasma(void)
 {
 	int x, y;
-	uint8_t alpha;
-
-	/* set background to black */
-	memset(g_data, g_cie[0x00], sizeof(g_data));
 
 	/* apply plasma to alpha channel */
 	for(y=0; y<LED_Y; y++)
 		for(x=0; x<LED_X; x++)
-			if((alpha = g_alpha_channel[y][x])!=0)
-				set_pixel_plasma(x,y,alpha);
+			set_pixel_plasma(x, y, g_alpha_channel[y][x]);
 
 	/* send data */
 	update_leds();
