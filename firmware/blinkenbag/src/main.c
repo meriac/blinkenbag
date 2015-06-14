@@ -206,7 +206,6 @@ main (void)
 {
 	uint8_t flag;
 	uint32_t prng;
-	uint16_t rnd;
 
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
@@ -228,18 +227,16 @@ main (void)
 	while(1)
 	{
 		/* random quote */
-		rnd = icrc16((uint8_t*)&prng, sizeof(prng));
-		prng++;
+		prng += icrc16((uint8_t*)&prng, sizeof(prng));
 
 		/* randomly switch between different animations */
-		switch(rnd % 10)
+		switch((prng>>6) % 7)
 		{
-			case 0:
+			case 1:
 				display_words(g_sentence1, WORD_COUNT(g_sentence1));
 				flag = 0;
 				break;
 
-			case 1:
 			case 2:
 				display_words(g_sentence2, WORD_COUNT(g_sentence2));
 				flag = 0;
@@ -250,7 +247,7 @@ main (void)
 				if(flag)
 					pmu_wait_ms(1500);
 
-				display_scrolling(g_quotes[rnd % QUOTE_COUNT]);
+				display_scrolling(g_quotes[prng % QUOTE_COUNT]);
 
 				/* flag as text */
 				flag = 1;
