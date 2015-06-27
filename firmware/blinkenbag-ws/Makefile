@@ -8,6 +8,7 @@ APP_CFLAGS=-Iinc -I../font/inc -std=gnu99 -fgnu89-inline -D__USE_CMSIS
 APP_LDFLAGS=-lm
 
 APP_SRC= \
+  src/ws2812.c \
   src/main.c
 
 APP_SRC+=$(IMAGES_C)
