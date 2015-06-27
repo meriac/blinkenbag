@@ -89,7 +89,7 @@ rgb_init (void)
 	/* Set SSP PCLK to 72MHz using DIV=1 */
 	LPC_SYSCON->SSPCLKDIV = 1;
 
-	/* 16 bit, SPI, SCR=0 */
+	/* 13 bit, SPI, SCR=0 */
 	LPC_SSP->CR0  = 0x000C;
 	LPC_SSP->CR1  = 0x0002;
 	/* divide clock further down to 10.29MHz (DIV=7) */

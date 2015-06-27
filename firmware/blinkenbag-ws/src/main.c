@@ -50,7 +50,6 @@ main (void)
 				rgb_tx(x==y ? 0xFF << shift : 0);
 
 			/* wait and blink */
-			pmu_wait_ms(1);
 			GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
 			pmu_wait_ms(1);
 			GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
