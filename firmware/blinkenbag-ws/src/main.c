@@ -26,7 +26,7 @@
 int
 main (void)
 {
-	int x,y;
+	int x, y, shift;
 
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
@@ -41,18 +41,24 @@ main (void)
 	/* initialize WS2812 RGB strip */
 	rgb_init();
 
+	shift = 0;
 	while(1)
 	{
 		for(x=0; x<144; x++)
 		{
 			for(y=0; y<144; y++)
-				rgb_tx(y==x ? 0x800000 : 0);
+				rgb_tx(x==y ? 0xFF << shift : 0);
 
 			/* wait and blink */
-			pmu_wait_ms(5);
+			pmu_wait_ms(1);
 			GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
-			pmu_wait_ms(5);
+			pmu_wait_ms(1);
 			GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
 		}
+
+		/* switch to next colour */
+		shift+=8;
+		if(shift>=24)
+			shift=0;
 	}
 }

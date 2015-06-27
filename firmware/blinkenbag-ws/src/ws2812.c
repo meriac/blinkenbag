@@ -26,11 +26,14 @@
 
 #define BIT_REVERSE(x) ((unsigned char)(__RBIT(x)>>24))
 
+#define SPI_BITS_H 8
+#define SPI_BITS_L 4
+#define SPI_BITS 13
 #define RGB_BITS 24
 
 int rgb_tx (uint32_t rgb)
 {
-	int i, colour, data;
+	int bits, colour, data;
 
 	/* colour correction & channel shuffle */
 	colour =  g_cie[(rgb >>  8) & 0xFF];
@@ -40,21 +43,24 @@ int rgb_tx (uint32_t rgb)
 	colour |= g_cie[rgb & 0xFF];
 
 	/* transmit all 24 bits */
-	for(i=0; i<RGB_BITS; i++)
+	bits = RGB_BITS;
+	while(bits>0)
 	{
 		/* while TX not full */
-		while(LPC_SSP->SR & 2)
+		if(LPC_SSP->SR & 2)
 		{
 			/* bit-dependent symbol */
-			data = (colour & (1UL<<RGB_BITS)) ? 0x3F0 : 0x300;
+			data = (colour & (1UL<<(RGB_BITS-1))) ?
+				((1<<SPI_BITS_H)-1)|(SPI_BITS-SPI_BITS_H):
+				((1<<SPI_BITS_L)-1)|(SPI_BITS-SPI_BITS_L);
 			colour <<= 1;
+			bits--;
 
 			/* transmit symbol */
 			LPC_SSP->DR = data;
 		}
 
-		/* discard RX fifo data */
-		while (LPC_SSP->SR & 4)
+		if(LPC_SSP->SR & 4)
 			data = LPC_SSP->DR;
 	}
 
@@ -80,14 +86,14 @@ rgb_init (void)
 	/* SCK */
 	LPC_IOCON->JTAG_TCK_PIO0_10 = 0x02;
 
-	/* Set SSP PCLK to 36MHz using DIV=2 */
-	LPC_SYSCON->SSPCLKDIV = 2;
+	/* Set SSP PCLK to 72MHz using DIV=1 */
+	LPC_SYSCON->SSPCLKDIV = 1;
 
-	/* 10 bit, SPI, SCR=0 */
-	LPC_SSP->CR0  = 0x0009;
+	/* 16 bit, SPI, SCR=0 */
+	LPC_SSP->CR0  = 0x000C;
 	LPC_SSP->CR1  = 0x0002;
-	/* divide clock further down to 9MHz (DIV=4) */
-	LPC_SSP->CPSR = 4;
+	/* divide clock further down to 10.29MHz (DIV=7) */
+	LPC_SSP->CPSR = 7;
 }
 
 void
