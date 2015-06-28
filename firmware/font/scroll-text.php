@@ -14,7 +14,7 @@ $text = "Far out in the uncharted backwaters of the unfashionable"
 	."gital watches are a pretty neat idea.";
 
 $text = strtoupper($text);
-$size = imagettfbbox( BITMAP_SIZE * OVERSAMPLING, 0, FONT_FILE, $text);
+$size = imagettfbbox( (BITMAP_SIZE+1) * OVERSAMPLING, 0, FONT_FILE, $text);
 $src_width = abs($size[4] - $size[0]);
 $src_height = abs($size[5] - $size[1]);
 
