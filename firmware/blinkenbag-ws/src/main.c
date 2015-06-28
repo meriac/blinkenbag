@@ -139,13 +139,12 @@ main (void)
 	/* initialize WS2812 RGB strip */
 	rgb_init();
 
-	memset(&g_alpha_channel, 0xFF, sizeof(g_alpha_channel));
 	frame = 0;
 	g_time = 0;
 	while(1)
 	{
 		/* draw frame */
-//		decode(frame);
+		decode(frame);
 
 		/* handle wrapping */
 		frame++;
