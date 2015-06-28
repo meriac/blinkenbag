@@ -20,7 +20,7 @@ $src_height = abs($size[5] - $size[1]);
 
 $src = imagecreatetruecolor($src_width, $src_height);
 $color = imagecolorallocate($src, 0xFF, 0xFF, 0xFF);
-imagettftext ( $src, BITMAP_SIZE * OVERSAMPLING, 0 , 0, $src_height - $size[1], $color, FONT_FILE, $text );
+imagettftext ( $src, (BITMAP_SIZE+1) * OVERSAMPLING, 0 , 0, $src_height - $size[1], $color, FONT_FILE, $text );
 
 $frame = imagecreatetruecolor($src_width, BITMAP_SIZE);
 imagecopyresampled($frame, $src, 0, 0, 0, 0, $src_width, BITMAP_SIZE, $src_width, $src_height);
