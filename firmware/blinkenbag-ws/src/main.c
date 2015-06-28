@@ -27,7 +27,7 @@
 #define IMAGE_OVERSAMPLING 3
 #define SIZE_X 8
 #define SIZE_Y 8
-#define SCALE 64
+#define SCALE 128
 
 static double g_time;
 static uint8_t g_alpha_channel[SIZE_Y][SIZE_X];

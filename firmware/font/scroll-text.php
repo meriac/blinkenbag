@@ -11,7 +11,7 @@ $text = "Far out in the uncharted backwaters of the unfashionable"
 	."roughly ninety-two million miles is an utterly insignifi"
 	."cant little blue-green planet whose ape-descended life f"
 	."orms are so amazingly primitive that they still think di"
-	."gital watches are a pretty neat idea.";
+	."gital watches are a pretty neat idea.          ";
 
 $text = strtoupper($text);
 $size = imagettfbbox( (BITMAP_SIZE+1) * OVERSAMPLING, 0, FONT_FILE, $text);
