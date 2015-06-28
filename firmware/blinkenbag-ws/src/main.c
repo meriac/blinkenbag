@@ -22,29 +22,63 @@
  */
 #include <openbeacon.h>
 #include "ws2812.h"
-#include "cie1931.h"
 #include "image.h"
 
 #define IMAGE_OVERSAMPLING 3
 #define SIZE_X 8
 #define SIZE_Y 8
 
-static uint32_t g_framebuffer[SIZE_Y][SIZE_X];
+static double g_time;
+static uint8_t g_alpha_channel[SIZE_Y][SIZE_X];
+static TRGB g_data[SIZE_Y][SIZE_X];
 
-static void frame_tx(void)
+static void update_leds(void)
 {
 	int x, y;
 
 	for(y=0; y<SIZE_Y; y++)
 		for(x=0; x<SIZE_X; x++)
-			rgb_tx(g_framebuffer[y][x]);
+			rgb_tx(&g_data[y][x]);
+	rgb_wait();
 }
 
-static void decode(int frame)
+static void set_pixel_plasma(int x, int y, uint8_t alpha)
 {
-	int height,y,x,count;
+	TRGB color, *p;
+
+	if( (x<0) || (x>=SIZE_X) || (y<0) || (y>=SIZE_Y) )
+		return;
+
+	/* update color */
+	color.r = (sin( x*0.1+cos(y*0.1+g_time))*127)+128;
+	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*127)+128;
+	color.b = (cos( x*0.5-cos(y*0.4+g_time))*127)+128;
+
+	/* update pixel */
+	p = &g_data[y][x];
+	p->r = (color.r*(int)alpha)/255;
+	p->g = (color.g*(int)alpha)/255;
+	p->b = (color.b*(int)alpha)/255;
+}
+
+static void display_plasma(void)
+{
+	int x, y;
+
+	/* apply plasma to alpha channel */
+	for(y=0; y<SIZE_Y; y++)
+		for(x=0; x<SIZE_X; x++)
+			set_pixel_plasma(x, y, g_alpha_channel[y][x]);
+
+	/* send data */
+	update_leds();
+}
+
+void decode(int frame)
+{
+	int y,x,count;
 	const uint8_t *p;
-	uint8_t t,value,*out,line[IMAGE_HEIGHT/2];
+	uint8_t value,t,*out,line[IMAGE_HEIGHT/2];
 
 	for(x=0; x<SIZE_X; x++)
 	{
@@ -78,11 +112,11 @@ static void decode(int frame)
 		{
 			t = *p++;
 
-			value = g_cie[((t>>0) & 0xF) * IMAGE_VALUE_MULTIPLIER];
-			g_framebuffer[y*2+0][x] = value | value<<8 | value<<16;
+			value = ((t>>0) & 0xF) * IMAGE_VALUE_MULTIPLIER;
+			g_alpha_channel[y*2+0][x] = value;
 
-			value = g_cie[((t>>4) & 0xF) * IMAGE_VALUE_MULTIPLIER];
-			g_framebuffer[y*2+1][x] = value | value<<8 | value<<16;
+			value = ((t>>4) & 0xF) * IMAGE_VALUE_MULTIPLIER;
+			g_alpha_channel[y*2+1][x] = value;
 		}
 	}
 }
@@ -90,7 +124,7 @@ static void decode(int frame)
 int
 main (void)
 {
-	int x, y, frame, t;
+	int frame;
 
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
@@ -105,11 +139,13 @@ main (void)
 	/* initialize WS2812 RGB strip */
 	rgb_init();
 
+	memset(&g_alpha_channel, 0xFF, sizeof(g_alpha_channel));
 	frame = 0;
+	g_time = 0;
 	while(1)
 	{
 		/* draw frame */
-		decode(frame);
+//		decode(frame);
 
 		/* handle wrapping */
 		frame++;
@@ -117,11 +153,14 @@ main (void)
 			frame=0;
 
 		/* transmit current frame */
-		frame_tx();
+		display_plasma();
 
 		/* wait and blink */
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
 		pmu_wait_ms(1);
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
+		pmu_wait_ms(5);
+
+		g_time+=0.1;
 	}
 }

@@ -23,8 +23,12 @@
 #ifndef __WS2812_H__
 #define __WS2812_H__
 
-extern void rgb_init (void);
-extern int rgb_tx (uint32_t rgb);
+typedef struct {
+	uint8_t b, r ,g;
+} TRGB;
 
+extern void rgb_init (void);
+extern void rgb_wait (void);
+extern int rgb_tx (const TRGB *rgb);
 
 #endif/*__WS2812_H__*/
