@@ -14,15 +14,15 @@ $text = "Far out in the uncharted backwaters of the unfashionable"
 	."gital watches are a pretty neat idea.          ";
 
 $text = strtoupper($text);
-$size = imagettfbbox( (BITMAP_SIZE+1) * OVERSAMPLING, 0, FONT_FILE, $text);
+$size = imagettfbbox( BITMAP_SIZE * OVERSAMPLING, 0, FONT_FILE, $text);
 $src_width = abs($size[4] - $size[0]);
 $src_height = abs($size[5] - $size[1]);
 
 $src = imagecreatetruecolor($src_width, $src_height);
 $color = imagecolorallocate($src, 0xFF, 0xFF, 0xFF);
-imagettftext ( $src, (BITMAP_SIZE+1) * OVERSAMPLING, 0 , 0, $src_height - $size[1], $color, FONT_FILE, $text );
+imagettftext ( $src, BITMAP_SIZE * OVERSAMPLING, 0 , 0, $src_height - $size[1], $color, FONT_FILE, $text );
 
 $frame = imagecreatetruecolor($src_width, BITMAP_SIZE);
-imagecopyresampled($frame, $src, 0, 0, 0, 0, $src_width, BITMAP_SIZE, $src_width, $src_height);
+imagecopyresampled($frame, $src, 0, 0, 0, 2, $src_width, BITMAP_SIZE, $src_width, $src_height-2);
 
 imagepng($frame, "scroll-text.png");
