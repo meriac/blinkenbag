@@ -22,11 +22,75 @@
  */
 #include <openbeacon.h>
 #include "ws2812.h"
+#include "cie1931.h"
+#include "image.h"
+
+#define IMAGE_OVERSAMPLING 3
+#define SIZE_X 8
+#define SIZE_Y 8
+
+static uint32_t g_framebuffer[SIZE_Y][SIZE_X];
+
+static void frame_tx(void)
+{
+	int x, y;
+
+	for(y=0; y<SIZE_Y; y++)
+		for(x=0; x<SIZE_X; x++)
+			rgb_tx(g_framebuffer[y][x]);
+}
+
+static void decode(int frame)
+{
+	int height,y,x,count;
+	const uint8_t *p;
+	uint8_t t,value,*out,line[IMAGE_HEIGHT/2];
+
+	for(x=0; x<SIZE_X; x++)
+	{
+		/* get current line */
+		p = &g_img_lines[g_img_lookup_line[frame+(x*IMAGE_OVERSAMPLING)]];
+
+		count = 0;
+		out = line;
+		while((t = *p++) != 0xF0)
+		{
+			/* run length decoding case */
+			if((t & 0xF0)==0xF0)
+			{
+				t &= 0xF;
+				count += t;
+				value = *p++;
+				while(t--)
+					*out++ = value;
+			}
+			/* single character */
+			else
+			{
+				*out++ = t;
+				count++;
+			}
+		}
+
+		/* 4 bit unpacking */
+		p = line;
+		for(y=0; y<(IMAGE_HEIGHT/2); y++)
+		{
+			t = *p++;
+
+			value = g_cie[((t>>0) & 0xF) * IMAGE_VALUE_MULTIPLIER];
+			g_framebuffer[y*2+0][x] = value | value<<8 | value<<16;
+
+			value = g_cie[((t>>4) & 0xF) * IMAGE_VALUE_MULTIPLIER];
+			g_framebuffer[y*2+1][x] = value | value<<8 | value<<16;
+		}
+	}
+}
 
 int
 main (void)
 {
-	int x, y, shift;
+	int x, y, frame, t;
 
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
@@ -41,23 +105,23 @@ main (void)
 	/* initialize WS2812 RGB strip */
 	rgb_init();
 
-	shift = 0;
+	frame = 0;
 	while(1)
 	{
-		for(x=0; x<144; x++)
-		{
-			for(y=0; y<144; y++)
-				rgb_tx(x==y ? 0xFF << shift : 0);
+		/* draw frame */
+		decode(frame);
 
-			/* wait and blink */
-			GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
-			pmu_wait_ms(1);
-			GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
-		}
+		/* handle wrapping */
+		frame++;
+		if((frame+(SIZE_X*IMAGE_OVERSAMPLING))>=IMAGE_WIDTH)
+			frame=0;
 
-		/* switch to next colour */
-		shift+=8;
-		if(shift>=24)
-			shift=0;
+		/* transmit current frame */
+		frame_tx();
+
+		/* wait and blink */
+		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
+		pmu_wait_ms(1);
+		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
 	}
 }
