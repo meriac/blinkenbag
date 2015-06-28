@@ -27,6 +27,7 @@
 #define IMAGE_OVERSAMPLING 3
 #define SIZE_X 8
 #define SIZE_Y 8
+#define SCALE 64
 
 static double g_time;
 static uint8_t g_alpha_channel[SIZE_Y][SIZE_X];
@@ -50,9 +51,9 @@ static void set_pixel_plasma(int x, int y, uint8_t alpha)
 		return;
 
 	/* update color */
-	color.r = (sin( x*0.1+cos(y*0.1+g_time))*127)+128;
-	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*127)+128;
-	color.b = (cos( x*0.5-cos(y*0.4+g_time))*127)+128;
+	color.r = (sin( x*0.1+cos(y*0.1+g_time))*(SCALE-1))+SCALE;
+	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*(SCALE-1))+SCALE;
+	color.b = (cos( x*0.5-cos(y*0.4+g_time))*(SCALE-1))+SCALE;
 
 	/* update pixel */
 	p = &g_data[y][x];
@@ -158,8 +159,8 @@ main (void)
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
 		pmu_wait_ms(1);
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
-		pmu_wait_ms(5);
+		pmu_wait_ms(3);
 
-		g_time+=0.1;
+		g_time+=0.03;
 	}
 }
