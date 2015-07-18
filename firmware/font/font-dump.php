@@ -5,11 +5,12 @@ define('FONT_FILE', 'lib/SansitaOne.ttf');
 
 define('FONT_HEIGHT', 8);
 define('FONT_WIDTH', 8);
-define('IMAGE_MULTIPLIER', 3);
+define('IMAGE_MULTIPLIER', 18);
+define('IMAGE_OVERSAMPLING', 3);
 define('FONT_MAP', '0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ!"#*+-.,\'');
 
-define('WIDTH', FONT_WIDTH*IMAGE_MULTIPLIER);
-define('HEIGHT', FONT_HEIGHT*IMAGE_MULTIPLIER);
+define('WIDTH', FONT_WIDTH*IMAGE_OVERSAMPLING);
+define('HEIGHT', FONT_HEIGHT*IMAGE_OVERSAMPLING);
 
 function compress_img($index, $img)
 {
@@ -37,11 +38,9 @@ function compress_img($index, $img)
 		/* convert to 4 bit packed */
 		$compressed = array();
 		$first = true;
-		$debug = array();
 		for($y=0; $y<($sy/2); $y++)
 		{
 			$data = $line[($y*2)+0] | ($line[($y*2)+1]<<4);
-			$debug[] = $data;
 
 			if($first)
 			{
@@ -78,6 +77,7 @@ function compress_img($index, $img)
 				}
 			}
 		}
+
 		/* dump remaining data */
 		if($count)
 		{
@@ -177,5 +177,6 @@ echo "\n";
 printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
 printf("#define IMAGE_SIZE   %u\n",$table_offset + count($lookup)*2);
 printf("#define IMAGE_VALUE_MULTIPLIER %u\n", IMAGE_MULTIPLIER);
+printf("#define IMAGE_OVERSAMPLING_X %u\n", IMAGE_OVERSAMPLING);
 
 echo "\n#endif/*__IMAGE_H__*/\n";
