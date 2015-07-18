@@ -104,7 +104,7 @@ foreach($list_offset as $index => $offset)
 }
 printf("\n\t0x%04X};\n", $table_offset);
 
-echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\\'')."\";\n";
+echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\"')."\";\n";
 
 echo "\n";
 printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
