@@ -149,14 +149,13 @@ foreach($list_offset as $index => $offset)
 		echo "\n\t";
 	printf("0x%04X,", $offset);
 }
-
-echo "\n\t0xFFFF};\n";
+printf("\n\t0x%04X};\n", $table_offset);
 
 echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\\'')."\"\n";
 
 echo "\n";
 printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
-printf("#define IMAGE_SIZE   %u\n",$table_offset);
+printf("#define IMAGE_SIZE %u\n",$table_offset);
 printf("#define IMAGE_VALUE_MULTIPLIER %u\n", IMAGE_MULTIPLIER);
 printf("#define IMAGE_OVERSAMPLING_X %u\n", IMAGE_OVERSAMPLING);
 
