@@ -121,7 +121,7 @@ function get_char($index, $char)
 echo "#ifndef __IMAGE_H__\n";
 echo "#define __IMAGE_H__\n";
 
-printf("\n/* auto generated with %s\n   using image %s */\n", __FILE__, IMAGE_NAME);
+printf("\n/* auto generated with %s\n   using the font '%s' */\n", basename(__FILE__), FONT_FILE);
 
 echo "\nconst uint8_t g_img_lines[] = {\n";
 
@@ -151,7 +151,7 @@ foreach($list_offset as $index => $offset)
 }
 printf("\n\t0x%04X};\n", $table_offset);
 
-echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\\'')."\"\n";
+echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\\'')."\";\n";
 
 echo "\n";
 printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
