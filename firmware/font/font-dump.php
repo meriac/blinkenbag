@@ -158,5 +158,6 @@ printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
 printf("#define IMAGE_SIZE %u\n",$table_offset);
 printf("#define IMAGE_VALUE_MULTIPLIER %u\n", IMAGE_MULTIPLIER);
 printf("#define IMAGE_OVERSAMPLING_X %u\n", IMAGE_OVERSAMPLING);
+printf("#define IMAGE_HEIGHT %u\n", FONT_HEIGHT);
 
 echo "\n#endif/*__IMAGE_H__*/\n";
