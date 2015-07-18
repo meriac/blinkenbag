@@ -14,7 +14,7 @@ define('HEIGHT', FONT_HEIGHT*IMAGE_OVERSAMPLING);
 
 function compress_img($index, $img)
 {
-	global $dist, $lookup, $table_offset;
+	global $table_offset;
 
 	$sx = imagesx($img);
 	$sy = imagesy($img);
@@ -87,19 +87,13 @@ function compress_img($index, $img)
 		$compressed[] = 0xF0;
 
 		$s = implode(',',$compressed);
-		if(isset($dist[$s]))
-			$lookup[] = $dist[$s];
-		else
-		{
-			printf("\t/*0x%04X*/ ",$table_offset);
-			foreach($compressed as $value)
-				printf("0x%02X,",$value);
-			echo "\n";
 
-			$lookup[] = $table_offset;
-			$dist[$s] = $table_offset;
-			$table_offset += count($compressed);
-		}
+		printf("\t/*0x%04X*/ ",$table_offset);
+		foreach($compressed as $value)
+			printf("0x%02X,",$value);
+		echo "\n";
+
+		$table_offset += count($compressed);
 	}
 }
 
@@ -131,15 +125,13 @@ printf("\n/* auto generated with %s\n   using image %s */\n", __FILE__, IMAGE_NA
 
 echo "\nconst uint8_t g_img_lines[] = {\n";
 
-$dist = array();
-$lookup = array();
 $list_offset = array();
 $table_offset = 0;
 
 for($i=0; $i<strlen(FONT_MAP); $i++)
 {
 	/* remember list offest */
-	$list_offset[] = count($lookup);
+	$list_offset[] = $table_offset;
 
 	/* compress character */
 	$char = FONT_MAP[$i];
@@ -148,17 +140,6 @@ for($i=0; $i<strlen(FONT_MAP); $i++)
 }
 
 printf("\t/*0x%04X*/ 0xF0};\n", $table_offset);
-
-echo "\nconst uint16_t g_img_lookup_line[] = {";
-
-foreach($lookup as $index => $offset)
-{
-	if(($index % 8) == 0)
-		echo "\n\t";
-	printf("0x%04X,", $offset);
-}
-
-echo "\n\t0xFFFF};\n";
 
 echo "\nconst uint16_t g_img_lookup_char[] = {";
 
@@ -175,7 +156,7 @@ echo "\nconst char g_img_font_map[] = \"".addcslashes(FONT_MAP,'\\\'')."\"\n";
 
 echo "\n";
 printf("#define IMAGE_FONT_CHARS %u\n",strlen(FONT_MAP));
-printf("#define IMAGE_SIZE   %u\n",$table_offset + count($lookup)*2);
+printf("#define IMAGE_SIZE   %u\n",$table_offset);
 printf("#define IMAGE_VALUE_MULTIPLIER %u\n", IMAGE_MULTIPLIER);
 printf("#define IMAGE_OVERSAMPLING_X %u\n", IMAGE_OVERSAMPLING);
 
