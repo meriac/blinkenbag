@@ -5,7 +5,7 @@ define('FONT_FILE', 'lib/SansitaOne.ttf');
 
 define('FONT_HEIGHT', 8);
 define('FONT_WIDTH', 8);
-define('IMAGE_MULTIPLIER', 18);
+define('IMAGE_MULTIPLIER', 17);
 define('IMAGE_OVERSAMPLING', 3);
 define('FONT_MAP', '0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ!"#*+-.,\'');
 
@@ -39,54 +39,7 @@ function compress_img($index, $img)
 		$compressed = array();
 		$first = true;
 		for($y=0; $y<($sy/2); $y++)
-		{
-			$data = $line[($y*2)+0] | ($line[($y*2)+1]<<4);
-
-			if($first)
-			{
-				$first = false;
-				$prev = $data;
-				$count = 1;
-			}
-			else
-			{
-				if($data==$prev)
-				{
-					$count++;
-					if($count>=15)
-					{
-						$compressed[] = 0xF0 | $count;
-						$compressed[] = $prev;
-						$count = 0;
-					}
-				}
-				else
-				{
-					if($count==1)
-						$compressed[] = $prev;
-					else
-					{
-						if($count>0)
-						{
-							$compressed[] = 0xF0 | $count;
-							$compressed[] = $prev;
-						}
-						$count = 1;
-					}
-					$prev = $data;
-				}
-			}
-		}
-
-		/* dump remaining data */
-		if($count)
-		{
-			$compressed[] = 0xF0 | $count;
-			$compressed[] = $data;
-		}
-		$compressed[] = 0xF0;
-
-		$s = implode(',',$compressed);
+			$compressed[] = $line[($y*2)+0] | ($line[($y*2)+1]<<4);
 
 		printf("\t/*0x%04X*/ ",$table_offset);
 		foreach($compressed as $value)
