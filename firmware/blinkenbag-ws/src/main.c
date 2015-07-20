@@ -52,16 +52,22 @@ static void set_pixel_plasma(int x, int y, uint8_t alpha)
 	if( (x<0) || (x>=SIZE_X) || (y<0) || (y>=SIZE_Y) )
 		return;
 
-	/* update color */
-	color.r = (sinf( x*0.1+cosf(y*0.1+g_time))*(SCALE-1))+SCALE;
-	color.g = (cosf(-y*0.2-sinf(x*0.3-g_time))*(SCALE-1))+SCALE;
-	color.b = (cosf( x*0.5-cosf(y*0.4+g_time))*(SCALE-1))+SCALE;
-
 	/* update pixel */
 	p = &g_data[x][y];
-	p->r = (color.r*(int)alpha)/255;
-	p->g = (color.g*(int)alpha)/255;
-	p->b = (color.b*(int)alpha)/255;
+
+	/* update color */
+	if(!alpha)
+		memset(p, 0, sizeof(*p));
+	else
+	{
+		color.r = (sinf( x*0.1+cosf(y*0.1+g_time))*(SCALE-1))+SCALE;
+		color.g = (cosf(-y*0.2-sinf(x*0.3-g_time))*(SCALE-1))+SCALE;
+		color.b = (cosf( x*0.5-cosf(y*0.4+g_time))*(SCALE-1))+SCALE;
+
+		p->r = (color.r*(int)alpha)/255;
+		p->g = (color.g*(int)alpha)/255;
+		p->b = (color.b*(int)alpha)/255;
+	}
 }
 
 static void display_plasma(void)
@@ -139,7 +145,9 @@ main (void)
 	while(1)
 	{
 		/* draw frame */
+		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
 		decode();
+		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
 
 		g_text_pos++;
 		if((g_text_pos+(SIZE_X*IMAGE_OVERSAMPLING_X))>=(int)(sizeof(g_img_lines)/(SIZE_Y/2)))
@@ -148,11 +156,7 @@ main (void)
 		/* transmit current frame */
 		display_plasma();
 
-		/* wait and blink */
-		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
-		pmu_wait_ms(1);
-		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
-
+		/* step forward in time */
 		g_time+=0.1;
 	}
 }
