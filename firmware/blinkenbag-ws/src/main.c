@@ -24,22 +24,24 @@
 #include "ws2812.h"
 #include "image.h"
 
-#define IMAGE_OVERSAMPLING 3
-#define SIZE_X 8
+#define SIZE_X 32
 #define SIZE_Y 8
 #define SCALE 128
 
-static double g_time;
-static uint8_t g_alpha_channel[SIZE_Y][SIZE_X];
-static TRGB g_data[SIZE_Y][SIZE_X];
+static float g_time;
+static uint8_t g_alpha_channel[SIZE_X][SIZE_Y];
+static TRGB g_data[SIZE_X][SIZE_Y];
+
+static const char g_text[] = "The quick brown fox jumps over the lazy dog";
+int g_text_pos, g_text_pos_sub;
 
 static void update_leds(void)
 {
 	int x, y;
 
-	for(y=0; y<SIZE_Y; y++)
-		for(x=0; x<SIZE_X; x++)
-			rgb_tx(&g_data[y][x]);
+	for(x=0; x<SIZE_X; x++)
+		for(y=0; y<SIZE_Y; y++)
+			rgb_tx(&g_data[x][(x&1)? (SIZE_Y-1)-y : y]);
 	rgb_wait();
 }
 
@@ -51,12 +53,12 @@ static void set_pixel_plasma(int x, int y, uint8_t alpha)
 		return;
 
 	/* update color */
-	color.r = (sin( x*0.1+cos(y*0.1+g_time))*(SCALE-1))+SCALE;
-	color.g = (cos(-y*0.2-sin(x*0.3-g_time))*(SCALE-1))+SCALE;
-	color.b = (cos( x*0.5-cos(y*0.4+g_time))*(SCALE-1))+SCALE;
+	color.r = (sinf( x*0.1+cosf(y*0.1+g_time))*(SCALE-1))+SCALE;
+	color.g = (cosf(-y*0.2-sinf(x*0.3-g_time))*(SCALE-1))+SCALE;
+	color.b = (cosf( x*0.5-cosf(y*0.4+g_time))*(SCALE-1))+SCALE;
 
 	/* update pixel */
-	p = &g_data[y][x];
+	p = &g_data[x][y];
 	p->r = (color.r*(int)alpha)/255;
 	p->g = (color.g*(int)alpha)/255;
 	p->b = (color.b*(int)alpha)/255;
@@ -67,57 +69,51 @@ static void display_plasma(void)
 	int x, y;
 
 	/* apply plasma to alpha channel */
-	for(y=0; y<SIZE_Y; y++)
-		for(x=0; x<SIZE_X; x++)
-			set_pixel_plasma(x, y, g_alpha_channel[y][x]);
+	for(x=0; x<SIZE_X; x++)
+		for(y=0; y<SIZE_Y; y++)
+			set_pixel_plasma(x, y, g_alpha_channel[x][y]);
 
 	/* send data */
 	update_leds();
 }
 
-void decode(int frame)
+int find_char(char target)
 {
-	int y,x,count;
-	const uint8_t *p;
-	uint8_t value,t,*out,line[IMAGE_HEIGHT/2];
+	int res;
+	char c;
+	const char *p = g_img_font_map;
+
+	/* convert to upper case */
+	if((target>='a') && (target<='z'))
+		target -= 'a'-'A';
+
+	/* find character */
+	res = 0;
+	while( (c = *p++)!=0 )
+		if(c==target)
+			return res;
+		else
+			res++;
+
+	/* return negative count if target can't be found in font map */
+	return -1;
+}
+
+void decode(void)
+{
+	int x, y;
+	const uint8_t *v;
+	uint8_t data;
 
 	for(x=0; x<SIZE_X; x++)
 	{
-		/* get current line */
-		p = &g_img_lines[g_img_lookup_line[frame+(x*IMAGE_OVERSAMPLING)]];
+		v = &g_img_lines[(g_text_pos*(SIZE_Y/2)) + (x*IMAGE_OVERSAMPLING_X*(SIZE_Y/2))];
 
-		count = 0;
-		out = line;
-		while((t = *p++) != 0xF0)
+		for(y=0; y<(SIZE_Y/2); y++)
 		{
-			/* run length decoding case */
-			if((t & 0xF0)==0xF0)
-			{
-				t &= 0xF;
-				count += t;
-				value = *p++;
-				while(t--)
-					*out++ = value;
-			}
-			/* single character */
-			else
-			{
-				*out++ = t;
-				count++;
-			}
-		}
-
-		/* 4 bit unpacking */
-		p = line;
-		for(y=0; y<(IMAGE_HEIGHT/2); y++)
-		{
-			t = *p++;
-
-			value = ((t>>0) & 0xF) * IMAGE_VALUE_MULTIPLIER;
-			g_alpha_channel[y*2+0][x] = value;
-
-			value = ((t>>4) & 0xF) * IMAGE_VALUE_MULTIPLIER;
-			g_alpha_channel[y*2+1][x] = value;
+			data = *v++;
+			g_alpha_channel[x][y*2+0] = (data & 0xF) * (IMAGE_VALUE_MULTIPLIER/2);
+			g_alpha_channel[x][y*2+1] = (data >> 4) * (IMAGE_VALUE_MULTIPLIER/2);
 		}
 	}
 }
@@ -125,8 +121,6 @@ void decode(int frame)
 int
 main (void)
 {
-	int frame;
-
 	/* Initialize GPIO (sets up clock) */
 	GPIOInit ();
 
@@ -140,17 +134,16 @@ main (void)
 	/* initialize WS2812 RGB strip */
 	rgb_init();
 
-	frame = 0;
 	g_time = 0;
+	g_text_pos = g_text_pos_sub = 0;
 	while(1)
 	{
 		/* draw frame */
-		decode(frame);
+		decode();
 
-		/* handle wrapping */
-		frame++;
-		if((frame+(SIZE_X*IMAGE_OVERSAMPLING))>=IMAGE_WIDTH)
-			frame=0;
+		g_text_pos++;
+		if((g_text_pos+(SIZE_X*IMAGE_OVERSAMPLING_X))>=(int)(sizeof(g_img_lines)/(SIZE_Y/2)))
+			g_text_pos = 0;
 
 		/* transmit current frame */
 		display_plasma();
@@ -159,8 +152,7 @@ main (void)
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_ON);
 		pmu_wait_ms(1);
 		GPIOSetValue (LED_PORT, LED_PIN0, LED_OFF);
-		pmu_wait_ms(3);
 
-		g_time+=0.03;
+		g_time+=0.1;
 	}
 }
