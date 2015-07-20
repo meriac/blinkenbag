@@ -1,13 +1,13 @@
 #!/usr/bin/env php
 <?php
 
-define('FONT_FILE', 'lib/SansitaOne.ttf');
+define('FONT_FILE', 'lib/ArialBlackItalic.ttf');
 
 define('FONT_HEIGHT', 8);
 define('FONT_WIDTH', 8);
 define('IMAGE_MULTIPLIER', 17);
 define('IMAGE_OVERSAMPLING', 3);
-define('FONT_MAP', '0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ!"#*+-.,\'');
+define('FONT_MAP', '0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ!"#*+-.,\'');
 
 define('WIDTH', FONT_WIDTH*IMAGE_OVERSAMPLING);
 define('HEIGHT', FONT_HEIGHT*IMAGE_OVERSAMPLING);
@@ -37,7 +37,6 @@ function compress_img($index, $img)
 
 		/* convert to 4 bit packed */
 		$compressed = array();
-		$first = true;
 		for($y=0; $y<($sy/2); $y++)
 			$compressed[] = $line[($y*2)+0] | ($line[($y*2)+1]<<4);
 
@@ -58,7 +57,7 @@ function get_char($index, $char)
 	$x2 = max($bbox[2], $bbox[4]);
 	$src_width = ($x2 - $x1)*1.2;
 
-	$img = imagecreate($src_width, HEIGHT*1.1);
+	$img = imagecreate($src_width, HEIGHT*0.9);
 
 	$color_bg = imagecolorallocate($img, 0x00, 0x00, 0x00);
 	$color_fg = imagecolorallocate($img, 0xFF, 0xFF, 0xFF);
