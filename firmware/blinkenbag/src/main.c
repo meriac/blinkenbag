@@ -230,7 +230,7 @@ main (void)
 		prng += icrc16((uint8_t*)&prng, sizeof(prng));
 
 		/* randomly switch between different animations */
-		switch((prng>>6) % 7)
+		switch(prng % 7)
 		{
 			case 1:
 				display_words(g_sentence1, WORD_COUNT(g_sentence1));
